@@ -1,0 +1,25 @@
+# node
+node_modules
+npm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+
+# next
+.next
+out
+
+# env
+.env
+.env.local
+.env.*.local
+
+# prisma
+prisma/*.db
+prisma/dev.db
+
+# misc
+.DS_Store
+
+# Local DB data
+/data/
+/data/postgres/

@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TeamRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String       @id @default(cuid())
+  phone         String       @unique
+  passwordHash  String
+  name          String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  teamMemberships  TeamMember[]
+  userApps         UserApp[]
+}
+
+model Team {
+  id            String      @id @default(cuid())
+  name          String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  members       TeamMember[]
+  apps          TeamApp[]
+  teamUserApps  UserApp[]   @relation("TeamUserApps")
+}
+
+model TeamMember {
+  userId   String
+  teamId   String
+  role     TeamRole  @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team     Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId])
+  @@index([userId])
+}
+
+model App {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  url         String
+  isExternal  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  teamSettings TeamApp[]
+  userSettings UserApp[] @relation("UserAppSettings")
+}
+
+model TeamApp {
+  teamId         String
+  appId          String
+  defaultCanView Boolean @default(false)
+  defaultCanUse  Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  team           Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  app            App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, appId])
+  @@index([teamId])
+  @@index([appId])
+}
+
+model UserApp {
+  userId   String
+  teamId   String
+  appId    String
+  canView  Boolean
+  canUse   Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team     Team   @relation(name: "TeamUserApps", fields: [teamId], references: [id], onDelete: Cascade)
+  app      App    @relation(name: "UserAppSettings", fields: [appId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId, appId])
+  @@index([userId])
+  @@index([appId])
+}
