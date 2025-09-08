@@ -8,70 +8,78 @@ datasource db {
 }
 
 enum TeamRole {
-  USER
-  ADMIN
+  OWNER // 超级管理员（团队创建者）
+  ADMIN // 管理员
+  USER // 普通用户
 }
 
 model User {
-  id            String       @id @default(cuid())
-  phone         String       @unique
-  passwordHash  String
-  name          String
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id           String   @id @default(cuid())
+  username     String   @unique
+  phone        String   @unique
+  email        String   @unique
+  passwordHash String
+  title        String?
+  companyName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  teamMemberships  TeamMember[]
-  userApps         UserApp[]
+  // 反向关系
+  teamMembers TeamMember[] @relation("UserTeamMembers")
+  userApps    UserApp[]    @relation("UserUserApps")
 }
 
 model Team {
-  id            String      @id @default(cuid())
-  name          String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  members       TeamMember[]
-  apps          TeamApp[]
-  teamUserApps  UserApp[]   @relation("TeamUserApps")
-}
-
-model TeamMember {
-  userId   String
-  teamId   String
-  role     TeamRole  @default(USER)
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  team     Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  // 反向关系
+  members      TeamMember[] @relation("TeamMembers")
+  userApps     UserApp[]    @relation("TeamUserApps")
+  teamSettings TeamApp[]
+  Invite       Invite[]
+}
 
-  @@id([userId, teamId])
-  @@index([userId])
+model TeamMember {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  role      TeamRole @default(USER)
+  createdAt DateTime @default(now())
+
+  user User @relation("UserTeamMembers", fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation("TeamMembers", fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
 }
 
 model App {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String?
   url         String
-  isExternal  Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  isExternal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   teamSettings TeamApp[]
+  // 注意：这里 relation 名叫 "UserAppSettings"，另一侧必须同名
   userSettings UserApp[] @relation("UserAppSettings")
 }
 
 model TeamApp {
   teamId         String
   appId          String
-  defaultCanView Boolean @default(false)
-  defaultCanUse  Boolean @default(false)
+  defaultCanView Boolean  @default(false)
+  defaultCanUse  Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  team           Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  app            App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  app  App  @relation(fields: [appId], references: [id], onDelete: Cascade)
 
   @@id([teamId, appId])
   @@index([teamId])
@@ -79,19 +87,33 @@ model TeamApp {
 }
 
 model UserApp {
-  userId   String
-  teamId   String
-  appId    String
-  canView  Boolean
-  canUse   Boolean
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  appId     String
+  createdAt DateTime @default(now())
+
+  user User @relation("UserUserApps", fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation("TeamUserApps", fields: [teamId], references: [id], onDelete: Cascade)
+  // 与 App 的关系，名称要与 App.userSettings 相同
+  app  App  @relation("UserAppSettings", fields: [appId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId, appId])
+}
+
+model Invite {
+  token     String   @id @default(cuid())
+  teamId    String
+  createdAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model SmsCode {
+  phone     String   @id
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  team     Team   @relation(name: "TeamUserApps", fields: [teamId], references: [id], onDelete: Cascade)
-  app      App    @relation(name: "UserAppSettings", fields: [appId], references: [id], onDelete: Cascade)
-
-  @@id([userId, teamId, appId])
-  @@index([userId])
-  @@index([appId])
 }
