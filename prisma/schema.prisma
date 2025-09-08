@@ -102,8 +102,9 @@ model UserApp {
 }
 
 model Invite {
-  token     String   @id @default(cuid())
-  teamId    String
+  id        String   @id @default(cuid())
+  teamId    String   @unique
+  token     String
   createdAt DateTime @default(now())
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)

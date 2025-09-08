@@ -6,28 +6,36 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
     serverActions: {
-      // 仅接受“字符串”，不能是正则
-      // 开发环境直接放开（'*'）+ localhost；生产只写你的正式域名
+      // 只写“主机与端口”，不要带 http/https
+      // 支持通配符：见官方文档 serverActions.allowedOrigins
+      // 开发环境放行 Codespaces 与本地；生产只放你的正式域名
       allowedOrigins:
         process.env.NODE_ENV === "production"
           ? [
-              "https://portal.your-prod-domain.com", // TODO: 改成你的正式域名
+              "portal.your-prod-domain.com", // TODO: 换成你的生产域名
+              "your-prod-domain.com",
             ]
           : [
-              "*",                    // 开发：允许任意来源（解决 Codespaces 动态域名）
-              "http://localhost:3000",
-              "https://localhost:3000",
+              "localhost:3000",
+              "127.0.0.1:3000",
+              "*.github.dev",
+              "*.app.github.dev",
             ],
     },
   },
+
   webpack(config) {
+    // 路径别名
     config.resolve.alias["@"] = path.resolve(process.cwd());
     config.resolve.alias["lib"] = path.resolve(process.cwd(), "lib");
+
+    // 允许从项目根解析
     config.resolve.modules = [
       ...(config.resolve.modules || []),
       path.resolve(process.cwd()),
       "node_modules",
     ];
+
     return config;
   },
 };

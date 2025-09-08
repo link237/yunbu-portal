@@ -1,12 +1,14 @@
-import { prisma } from '@/lib/prisma';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { createApp } from './actions';
+import { headers, cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+
 
 export default async function AppsPage() {
-  const h = headers();
-  const teamId = h.get('x-team-id');
-  if (!teamId) redirect('/login');
+  const h = headers(); const c = cookies();
+  const teamId = h.get("x-team-id") ?? c.get("teamId")?.value ?? null;
+  const isAdmin = (h.get("x-is-admin") === "true");
+  if (!teamId) redirect("/login");
+  if (!isAdmin) redirect("/admin");
 
   // 取团队内已上架应用（联表 TeamApp）
   const teamApps = await prisma.teamApp.findMany({
@@ -21,7 +23,8 @@ export default async function AppsPage() {
         <h2 className="font-semibold mb-3">新建应用</h2>
 
         {/* 关键点：使用 <form action={createApp}>，并保证输入框的 name 与 actions.ts 中读取的一致 */}
-        <form action={createApp} className="space-y-3">
+        {/* Use a client-side handler or move createApp to a server action with the 'use server' directive */}
+        <form action="/admin/apps/create" method="post" className="space-y-3">
           <div className="flex gap-3">
             <input
               name="name"

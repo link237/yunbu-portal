@@ -16,6 +16,7 @@
     "@prisma/client": "^5.18.0",
     "bcryptjs": "^2.4.3",
     "classnames": "^2.5.1",
+    "jose": "^6.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.542.0",
     "next": "14.2.5",
